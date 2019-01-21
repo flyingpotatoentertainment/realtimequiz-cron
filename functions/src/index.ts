@@ -14,6 +14,7 @@
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import * as request from "request-promise";
+import { Result } from "range-parser";
 admin.initializeApp(functions.config().firebase);
 export const db = admin.firestore();
 
@@ -39,10 +40,33 @@ exports.minutely_job = functions.pubsub
 
     // TODO post the question to the live quiz round:
     // TODO fetch a question from the api.
-    const questions = await request(
-      "https://opentdb.com/api.php?amount=3&type=multiple"
+
+    // TODO catch errors
+    const questionRequest = await request(
+      "https://opentdb.com/api.php?amount=1&type=multiple"
     );
-    console.log(questions);
+    const questionResponse = JSON.parse(questionRequest);
+    const question = questionResponse.results[0]
+    console.log(question);
+
+    const questionRef = db.collection("questions_test").doc();
+    // TODO check question uniqueness
+    questionRef.set({
+        category: question.category, 
+        difficulty: question.difficulty, 
+        question: question.question, 
+        answers: [question.correct_answer, ...question.incorrect_answers], 
+        meta: {
+          upvote: 0, 
+          downvote: 0, 
+          warning: 0,
+        }, 
+        language: "en"
+    })
+    // TODO generate translations and question collection supertype.
+
+    // TODO increase 
+
 
     // TODO write the old questions metadata
     // TODO kick quaraneened players
