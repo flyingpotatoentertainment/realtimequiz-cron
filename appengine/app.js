@@ -14,12 +14,19 @@ const app = express();
 // PubSub message to that topic.
 app.get('/publish/:topic', async (req, res) => {
   const topic = req.params['topic'];
-
+  setTimeout(async function() { 
+    try {
+      await pubsubClient.topic(topic)
+          .publisher()
+          .publish(Buffer.from('test'));
+    } catch (e) {
+      console.log(e)
+    }
+   }, 30000);
   try {
     await pubsubClient.topic(topic)
         .publisher()
         .publish(Buffer.from('test'));
-
     res.status(200).send('Published to ' + topic).end();
   } catch (e) {
     res.status(500).send('' + e).end();
