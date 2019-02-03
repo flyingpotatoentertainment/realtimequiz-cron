@@ -15,6 +15,7 @@ import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
 import * as request from "request-promise";
 import { Result } from "range-parser";
+
 admin.initializeApp(functions.config().firebase);
 export const db = admin.firestore();
 
@@ -33,9 +34,10 @@ exports.minutely_job = functions.pubsub
       "https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986"
     );
 
+    console.log(questionRequest);
     const questionResponse = JSON.parse(unescape(questionRequest));
     const question = questionResponse.results[0]
-    console.log(question);
+    // console.log(question);
 
     const answers = [question.correct_answer, ...question.incorrect_answers];
 
@@ -57,7 +59,7 @@ exports.minutely_job = functions.pubsub
     
     // TODO evaluate & delete the last round
     // TODO extract string paths
-    evaluateRound()
+    await evaluateRound(channelRef)
 
 
 
@@ -85,6 +87,7 @@ exports.minutely_job = functions.pubsub
       channelRef.update({
         correctAnswerIndex, 
       })
+      evaluateGuesses(channelRef)
     }, 10000);
     
 
@@ -100,33 +103,24 @@ exports.minutely_job = functions.pubsub
     return true;
   });
 
-  async function evaluateRound(){
-    const channelRef = db.collection("channel_test").doc("en");
-
-    const question = await channelRef.get();
-
+  async function evaluateRound(channelRef){
+    let roundSnapshot = await channelRef.get();
+    // console.log(roundSnapshot.data());
+    
     const upvotes =  await channelRef.collection("upvotes").get(); 
     const downvotes =  await channelRef.collection("downvotes").get(); 
     const issues =  await channelRef.collection("issues").get(); 
     const guesses =  await channelRef.collection("guesses").get(); 
-    channelRef.update({results: {
-      upvotesCoung: upvotes.docs.length, 
-      downvotesCount: downvotes.docs.length, 
-      issuesCount: issues.docs.length, 
-      guessesCount: guesses.docs.length, 
-      guesses: {
-        0: guesses.docs.filter((doc) => {doc["index"] == 0}).length,
-        1: guesses.docs.filter((doc) => {doc["index"] == 1}).length,
-        2: guesses.docs.filter((doc) => {doc["index"] == 2}).length,
-        3: guesses.docs.filter((doc) => {doc["index"] == 3}).length,
-      }
-    }})
 
-    if(upvotes.docs.length + downvotes.docs.length > 0){
+    // console.log("Documents length")
+    // console.log(upvotes.docs.length)
+    // console.log(downvotes.docs.length)
+    if(upvotes.docs.length > downvotes.docs.length ){
       // check if the question allready exists
       // TODO check if this works
-      const questionExists = await db.collection("questions_test").where('question', '==', question['question']).get();
-
+      const questionExists = await db.collection("questions_test").where('question', '==', roundSnapshot.data()["question"]).get();
+      // console.log("question snap")
+      // console.log(questionExists.docs)
       if(questionExists.docs.length > 0){
         // TODO test
         questionExists.docs.forEach((item) => {
@@ -134,24 +128,24 @@ exports.minutely_job = functions.pubsub
             upvotesCount: item["upvotesCount"] + upvotes.docs.length, 
             downvotesCount: item["downvotesCount"] + downvotes.docs.length, 
             issuesCount: item["issuesCount"] + issues.docs.length, 
-            guessesCount: guesses.docs.length, 
-            correctGuesseCount: guesses.docs.filter((doc) => {doc["index"] == question["correctAnswerIndex"]}).length,
+            guessesCount: item["guessesCount"] + guesses.docs.length, 
+            correctGuessesCount: item["correctGuessesCount"] + guesses.docs.filter((doc) => {doc["index"] == roundSnapshot.data()["correctAnswerIndex"]}).length,
           });
         })
       }
       else{
         const questionRef = db.collection("questions_test").doc(); 
         questionRef.set({
-            category: question["category"],
-            difficulty: question["difficulty"],
-            question: question["question"],
-            correctAnswer: question["answers"][question["correctAnswerIndex"]],
-            answers: question["answers"].filter((item) => item != question["answers"][question["correctAnswerIndex"]]),
+            category: roundSnapshot.data()["category"],
+            difficulty: roundSnapshot.data()["difficulty"],
+            question: roundSnapshot.data()["question"],
+            correctAnswer: roundSnapshot.data()["answers"][roundSnapshot.data()["correctAnswerIndex"]],
+            answers: roundSnapshot.data()["answers"].filter((item) => item != roundSnapshot.data()["answers"][roundSnapshot.data()["correctAnswerIndex"]]),
             upvotesCount: upvotes.docs.length, 
             downvotesCount: downvotes.docs.length, 
             issuesCount: issues.docs.length, 
             guessesCount: guesses.docs.length, 
-            correctGuesseCount: guesses.docs.filter((doc) => {doc["index"] == question["correctAnswerIndex"]}).length,
+            correctGuessesCount: guesses.docs.filter((doc) => {doc["index"] == roundSnapshot.data()["correctAnswerIndex"]}).length,
         })
       }
     }
@@ -160,6 +154,25 @@ exports.minutely_job = functions.pubsub
     deleteCollection(downvotes);
     deleteCollection(issues);
     deleteCollection(guesses);
+  }
+  async function evaluateGuesses(channelRef){
+    const guesses =  await channelRef.collection("guesses").get(); 
+
+    console.log(guesses.docs)
+    guesses.docs.forEach((item) => console.log(item.data().index))
+    channelRef.update({results: {
+      // upvotesCoung: upvotes.docs.length, 
+      // downvotesCount: downvotes.docs.length, 
+      // issuesCount: issues.docs.length, 
+      guessesCount: guesses.docs.length, 
+      guesses: {
+        0: guesses.docs.filter((doc) => doc.data().index == 0).length,
+        1: guesses.docs.filter((doc) => doc.data().index == 1).length,
+        2: guesses.docs.filter((doc) => doc.data().index == 2).length,
+        3: guesses.docs.filter((doc) => doc.data().index == 3).length,
+      }
+    }})
+    
   }
   function deleteCollection(snapshot){
     snapshot.forEach((doc) => {
