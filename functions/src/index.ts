@@ -31,10 +31,13 @@ exports.minutely_job = functions.pubsub
 
     // TODO catch errors
     var questionRequest = await request(
-      "https://opentdb.com/api.php?amount=1&type=multiple&encode=url3986"
+      "https://opentdb.com/api.php?amount=1&type=multiple"
     );
 
+
     console.log(questionRequest);
+    questionRequest = questionRequest.replace(/&quot;/g, '\\"');
+    questionRequest = questionRequest.replace(/&#039;/g, '\\`');
     const questionResponse = JSON.parse(unescape(questionRequest));
     const question = questionResponse.results[0]
     // console.log(question);
