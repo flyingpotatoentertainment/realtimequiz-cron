@@ -33,6 +33,13 @@ app.get('/publish/:topic', async (req, res) => {
   }
 });
 
+
+// Index page, just to make it easy to see if the app is working.
+app.get('/time', (req, res) => {
+  var currentTime = new Date();
+  res.status(200).send(currentTime.getTime()).end();
+});
+
 // Index page, just to make it easy to see if the app is working.
 app.get('/', (req, res) => {
     res.status(200).send('[functions-cron]: Hello, world!').end();

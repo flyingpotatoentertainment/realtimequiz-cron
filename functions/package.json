@@ -17,8 +17,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "deploy": "tsc && firebase deploy --only functions --project realtimequiz",
-    "serve": "tsc --watch && firebase functions:shell --project realtimequiz"
+    "deploy": "tsc && firebase deploy --only functions --project live-pub-quiz",
+    "serve": "tsc --watch && firebase functions:shell --project live-pub-quiz"
   },
   "main": "build/index.js",
   "private": true

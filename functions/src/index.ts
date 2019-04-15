@@ -26,45 +26,11 @@ exports.minutely_job = functions.pubsub
       const dataString = Buffer.from(message.data, "base64").toString();
       // console.log(`Message Data: ${dataString}`);
     }
-    // TODO post the question to the live quiz round:
-    // TODO fetch a question from the api.
 
-    // TODO catch errors
-    var questionRequest = await request(
-      "https://opentdb.com/api.php?amount=1&type=multiple"
-    );
-
-
-    console.log(questionRequest);
-    questionRequest = questionRequest.replace(/&quot;/g, '\\"');
-    questionRequest = questionRequest.replace(/&#039;/g, '\\`');
-    const questionResponse = JSON.parse(unescape(questionRequest));
-    const question = questionResponse.results[0]
-    // console.log(question);
-
+    // get question
+    var question = await getFallbackQuestion(); 
+    console.log(question);
     const answers = [question.correct_answer, ...question.incorrect_answers];
-
-    // // TODO check question uniqueness
-    // questionRef.set({
-    //     category: question.category, 
-    //     difficulty: question.difficulty, 
-    //     question: question.question, 
-    //     answers: answers, 
-    //     meta: {
-    //       upvote: 0, 
-    //       downvote: 0, 
-    //       warning: 0,
-    //     }, 
-    //     language: "en"
-    // })
-
-    const channelRef = db.collection("channel_test").doc("en");
-    
-    // TODO evaluate & delete the last round
-    // TODO extract string paths
-    await evaluateRound(channelRef)
-
-
 
     // Shuffle the answers array
     for (let i = 0; i < answers.length; i++) {
@@ -74,14 +40,13 @@ exports.minutely_job = functions.pubsub
     }
     const correctAnswerIndex = answers.indexOf(question.correct_answer); 
     //const roundRef = channelRef.collection("rounds").doc(); 
-
-
+    
+    const channelRef = db.collection("channels").doc("en");
+    
     channelRef.set({
-        category: question.category, 
-        difficulty: question.difficulty, 
-        question: question.question, 
-        answers: answers,
-        correctAnswerIndex: -1, 
+      question: question.question, 
+      answers: answers,
+      correctAnswerIndex: -1, 
     })
 
     // TODO set correct answer index some time in the future
@@ -91,7 +56,7 @@ exports.minutely_job = functions.pubsub
         correctAnswerIndex, 
       })
       evaluateGuesses(channelRef)
-    }, 10000);
+    }, 15000);
     
 
 
@@ -175,10 +140,27 @@ exports.minutely_job = functions.pubsub
         3: guesses.docs.filter((doc) => doc.data().index == 3).length,
       }
     }})
-    
   }
   function deleteCollection(snapshot){
     snapshot.forEach((doc) => {
       doc.ref.delete();
     });
+  }
+  async function getFallbackQuestion(){
+    var question; 
+    while(!question){
+      try{
+        var questionRequest = await request(
+          "https://opentdb.com/api.php?amount=1&category=9&type=multiple"
+        );
+        console.log(questionRequest);
+        questionRequest = questionRequest.replace(/&quot;/g, '\\"');
+        questionRequest = questionRequest.replace(/&#039;/g, '\\`');
+        const questionResponse = JSON.parse(unescape(questionRequest));
+        question = questionResponse.results[0]
+      }
+      catch{
+      }
+    }
+    return question;
   }
