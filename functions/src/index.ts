@@ -29,9 +29,19 @@ exports.new_round = functions.pubsub
     const channelRef = db.collection("channels").doc(channel);
     const data = await channelRef.get();
 
-    // TODO set the number of active player to the number of players where score != 0;
+    // DONE set the number of active player to the number of players where score != 0;
+
     channelRef.set({
-      metadata: { round: 0 }
+      metadata: {
+        round: 1,
+        playerCount: (await channelRef
+          .collection("players")
+          .where("score", ">", 0)
+          .get()).docs.length
+      }
+    });
+    (await channelRef.collection("players").get()).forEach(player => {
+      player.ref.set({ score: 0 });
     });
 
     return true;
@@ -64,7 +74,6 @@ exports.evaluate_question = functions.pubsub
 
     // There is no winner- nockout model?
     else if (correctGuesses.length == 1) {
-
     }
     // increment all correct guesser players score by 1
     correctGuesses.forEach(guess => {
@@ -79,14 +88,14 @@ exports.evaluate_question = functions.pubsub
       result: {
         answer: round.data().correctAnswerIndex,
         guesses: {
-          0: guesses.docs.filter(doc => doc.data().index == 0).length,
-          1: guesses.docs.filter(doc => doc.data().index == 1).length,
-          2: guesses.docs.filter(doc => doc.data().index == 2).length,
-          3: guesses.docs.filter(doc => doc.data().index == 3).length
+          0: guesses.docs.filter(doc => doc.data().guess == 0).length,
+          1: guesses.docs.filter(doc => doc.data().guess == 1).length,
+          2: guesses.docs.filter(doc => doc.data().guess == 2).length,
+          3: guesses.docs.filter(doc => doc.data().guess == 3).length
         }
       }
     });
-    
+
     deleteCollection(guesses);
 
     return true;

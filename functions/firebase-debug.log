@@ -1,0 +1,71 @@
+[debug] [2019-04-17T14:52:42.483Z] ----------------------------------------------------------------------
+[debug] [2019-04-17T14:52:42.485Z] Command:       /usr/local/Cellar/node/11.4.0/bin/node /usr/local/bin/firebase deploy --only functions --project live-pub-quiz
+[debug] [2019-04-17T14:52:42.486Z] CLI Version:   6.5.0
+[debug] [2019-04-17T14:52:42.486Z] Platform:      darwin
+[debug] [2019-04-17T14:52:42.486Z] Node Version:  v11.4.0
+[debug] [2019-04-17T14:52:42.491Z] Time:          Wed Apr 17 2019 16:52:42 GMT+0200 (Central European Summer Time)
+[debug] [2019-04-17T14:52:42.491Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2019-04-17T14:52:42.505Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2019-04-17T14:52:42.507Z] > authorizing via signed-in user
+[debug] [2019-04-17T14:52:42.507Z] [iam] checking project live-pub-quiz for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2019-04-17T14:52:42.509Z] > refreshing access token with scopes: ["email","https://www.googleapis.com/auth/cloud-platform","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","openid"]
+[debug] [2019-04-17T14:52:42.510Z] >>> HTTP REQUEST POST https://www.googleapis.com/oauth2/v3/token  
+ <request body omitted>
+[debug] [2019-04-17T14:52:42.799Z] <<< HTTP RESPONSE 200
+[debug] [2019-04-17T14:52:42.832Z] >>> HTTP REQUEST POST https://cloudresourcemanager.googleapis.com/v1/projects/live-pub-quiz:testIamPermissions  
+
+[debug] [2019-04-17T14:52:43.690Z] <<< HTTP RESPONSE 200
+[info] 
+[info] === Deploying to 'live-pub-quiz'...
+[info] 
+[info] i  deploying functions
+[debug] [2019-04-17T14:52:45.662Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "engines": {
+    "node": "8"
+  },
+  "dependencies": {
+    "firebase-admin": "^6.0.0",
+    "firebase-functions": "^2.0.5",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {
+    "tslint": "^5.8.0",
+    "typescript": "^2.5.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "deploy": "tsc && firebase deploy --only functions --project live-pub-quiz",
+    "serve": "tsc --watch && firebase functions:shell --project live-pub-quiz"
+  },
+  "main": "build/index.js",
+  "private": true
+}
+[info] i  functions: ensuring necessary APIs are enabled...
+[debug] [2019-04-17T14:52:45.664Z] >>> HTTP REQUEST GET https://servicemanagement.googleapis.com/v1/services/cloudfunctions.googleapis.com/projectSettings/live-pub-quiz?view=CONSUMER_VIEW  
+ 
+[debug] [2019-04-17T14:52:45.664Z] >>> HTTP REQUEST GET https://servicemanagement.googleapis.com/v1/services/runtimeconfig.googleapis.com/projectSettings/live-pub-quiz?view=CONSUMER_VIEW  
+ 
+[debug] [2019-04-17T14:52:47.108Z] <<< HTTP RESPONSE 200
+[debug] [2019-04-17T14:52:47.198Z] <<< HTTP RESPONSE 200
+[info] ✔  functions: all necessary APIs are enabled
+[debug] [2019-04-17T14:52:47.200Z] >>> HTTP REQUEST GET https://cloudresourcemanager.googleapis.com/v1/projects/live-pub-quiz  
+ 
+[debug] [2019-04-17T14:52:48.024Z] <<< HTTP RESPONSE 200
+[debug] [2019-04-17T14:52:48.025Z] >>> HTTP REQUEST GET https://mobilesdk-pa.googleapis.com/v1/projects/672628707479:getServerAppConfig  
+ 
+[debug] [2019-04-17T14:52:48.299Z] <<< HTTP RESPONSE 200
+[info] i  functions: preparing functions directory for uploading...
+[debug] [2019-04-17T14:52:48.302Z] >>> HTTP REQUEST GET https://runtimeconfig.googleapis.com/v1beta1/projects/live-pub-quiz/configs  
+ 
+[debug] [2019-04-17T14:52:48.652Z] <<< HTTP RESPONSE 200
+[info] i  functions: packaged functions (53.94 KB) for uploading
+[debug] [2019-04-17T14:52:49.290Z] >>> HTTP REQUEST POST https://cloudfunctions.googleapis.com/v1/projects/live-pub-quiz/locations/us-central1/functions:generateUploadUrl  
+ 
+[debug] [2019-04-17T14:52:49.879Z] <<< HTTP RESPONSE 200
+[debug] [2019-04-17T14:52:49.880Z] >>> HTTP REQUEST PUT https://storage.googleapis.com/gcf-upload-us-central1-e75d75f7-a26b-48cd-becc-2012d1e32b8e/f20fc3a3-6bcb-44de-846e-c3e57c534cce.zip?GoogleAccessId=service-672628707479@gcf-admin-robot.iam.gserviceaccount.com&Expires=1555514569&Signature=TOD7NqVbyu8tVTUuQi6PZGDTZp701Eb%2FnaY3njK%2FvvXPzfES8K282qc1qrcvVjMQ3xPtxdbmuBXea6GlpgyMWVb%2FUbISEchGAkN3zO2qyFfba8xXFoBKp8cciSCKHg69xEXR0GXt8zG7VBkrDfzXG7ld2iI%2BiPzolrRy4dlg%2FzFG6JIqHvj7e9arPi6UGH%2FHVxYaEE%2FcLMfHLPvn9AA5xqf9g3%2Brm1lnOy%2Bvg8omIs8JtN%2BnVMlZYYbnH6jZ7hHSBu1KaPyyUwI5ZbjybUf09sYZKjDBnuxsTO2GFCN%2FOcHMJJL444zrHmj5B0cANwCWI54scniUS40BqV3be3khYw%3D%3D  
+
