@@ -112,7 +112,11 @@ exports.post_question = functions.pubsub
     // update metadata
     const data = await channelRef.get();
     channelRef.update({
-      metadata: { round: data.data().metadata.round + 1, reports: 0 }
+      metadata: {
+        ...data.data().metadata,
+        round: data.data().metadata.round + 1,
+        reports: 0
+      }
     });
 
     // get question
