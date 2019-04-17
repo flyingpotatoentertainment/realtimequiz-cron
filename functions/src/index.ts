@@ -22,12 +22,25 @@ export const db = admin.firestore();
 exports.new_round = functions.pubsub
   .topic("new-round")
   .onPublish(async message => {
+    var channel = "000000";
+    if (message.data) {
+      channel = Buffer.from(message.data, "base64").toString();
+    }
+    const channelRef = db.collection("channels").doc(channel);
+    const data = await channelRef.get();
+
+    // TODO set the number of active player to the number of players where score != 0;
+    channelRef.set({
+      metadata: { round: 0 }
+    });
+
     return true;
   });
+
 exports.evaluate_question = functions.pubsub
   .topic("evaluate-question")
   .onPublish(async message => {
-    var channel = "000000"
+    var channel = "000000";
     if (message.data) {
       channel = Buffer.from(message.data, "base64").toString();
     }
@@ -35,24 +48,63 @@ exports.evaluate_question = functions.pubsub
 
     const round = await channelRef.get();
 
+    const guesses = await channelRef.collection("guesses").get();
 
+    const correctGuesses = guesses.docs.filter(
+      doc => doc.data().guess == round.data().correctAnswerIndex
+    );
 
-    // deactivate the current round
+    // TODO check if theres a winner
+    if (correctGuesses.length == 1) {
+      // display current winner
+      channelRef.update({
+        winner: correctGuesses[0].id
+      });
+    }
+
+    // There is no winner- nockout model?
+    else if (correctGuesses.length == 1) {
+
+    }
+    // increment all correct guesser players score by 1
+    correctGuesses.forEach(guess => {
+      console.log(guess.toString());
+      channelRef
+        .collection("players")
+        .doc(guess.id)
+        .update({ score: round.data().metadata.round });
+    });
+
     channelRef.update({
-      active: false,
-      result: round.data()["correctAnswerIndex"]
-    })
+      result: {
+        answer: round.data().correctAnswerIndex,
+        guesses: {
+          0: guesses.docs.filter(doc => doc.data().index == 0).length,
+          1: guesses.docs.filter(doc => doc.data().index == 1).length,
+          2: guesses.docs.filter(doc => doc.data().index == 2).length,
+          3: guesses.docs.filter(doc => doc.data().index == 3).length
+        }
+      }
+    });
+    
+    deleteCollection(guesses);
 
     return true;
   });
 exports.post_question = functions.pubsub
   .topic("post-question")
   .onPublish(async message => {
-    var channel = "000000"
+    var channel = "000000";
     if (message.data) {
       channel = Buffer.from(message.data, "base64").toString();
     }
     const channelRef = db.collection("channels").doc(channel);
+
+    // update metadata
+    const data = await channelRef.get();
+    channelRef.update({
+      metadata: { round: data.data().metadata.round + 1, reports: 0 }
+    });
 
     // get question
     var question = await getFallbackQuestion();
@@ -71,12 +123,14 @@ exports.post_question = functions.pubsub
     const correctAnswerIndex = answers.indexOf(question.correct_answer);
     //const roundRef = channelRef.collection("rounds").doc();
 
-    channelRef.set({
+    channelRef.update({
       question: question.question,
       answers: answers,
-      correctAnswerIndex: correctAnswerIndex, 
+      correctAnswerIndex: correctAnswerIndex,
       active: true,
-      result: -1
+      result: {
+        answer: -1
+      }
     });
     return true;
   });

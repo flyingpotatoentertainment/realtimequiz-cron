@@ -14,6 +14,11 @@ const app = express();
 
 app.get("/publish/public-game", async (req, res) => {
   try {
+    await pubsubClient
+        .topic("new-round")
+        .publisher()
+        .publish(Buffer.from("000000"));
+
     var x = 0;
     var intervalID = setInterval(async () => {
       var currentdate = new Date();
