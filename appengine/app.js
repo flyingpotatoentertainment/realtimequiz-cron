@@ -18,7 +18,6 @@ app.get("/publish/public-game", async (req, res) => {
         .topic("new-round")
         .publisher()
         .publish(Buffer.from("000000"));
-
     var x = 0;
     var intervalID = setInterval(async () => {
       var currentdate = new Date();
@@ -37,7 +36,7 @@ app.get("/publish/public-game", async (req, res) => {
             .publish(Buffer.from("000000"));
         }, 12000);
 
-      if (++x === 10) {
+      if (++x === 9) {
         clearInterval(intervalID);
       }
     }, 30000);

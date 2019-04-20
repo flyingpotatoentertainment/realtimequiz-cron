@@ -33,11 +33,9 @@ exports.new_round = functions.pubsub
 
     channelRef.set({
       metadata: {
-        round: 1,
-        playerCount: (await channelRef
-          .collection("players")
-          .where("score", ">", 0)
-          .get()).docs.length
+        round: 0,
+        playerCount: 0,
+        activePlayerCount: 0
       }
     });
     (await channelRef.collection("players").get()).forEach(player => {
@@ -63,6 +61,15 @@ exports.evaluate_question = functions.pubsub
     const correctGuesses = guesses.docs.filter(
       doc => doc.data().guess == round.data().correctAnswerIndex
     );
+
+    channelRef.update({
+      metadata: {
+        ...round.data().metadata,
+        remainingPlayerCount: correctGuesses.length, 
+        playerCount: round.data().round === 1 ? guesses.docs.length : round.data().metadata.playerCount,
+        activePlayerCount: round.data().round === 1 ? guesses.docs.length : correctGuesses.length
+      }
+    });
 
     // TODO check if theres a winner
     if (correctGuesses.length == 1) {
