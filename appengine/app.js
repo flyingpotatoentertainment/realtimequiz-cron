@@ -36,8 +36,15 @@ app.get("/publish/public-game", async (req, res) => {
             .publish(Buffer.from("000000"));
         }, 12000);
 
-      if (++x === 9) {
+      if (++x === 10) {
         clearInterval(intervalID);
+        setTimeout(async () => {
+          // Your logic here
+          await pubsubClient
+            .topic("finish-round")
+            .publisher()
+            .publish(Buffer.from("000000"));
+        }, 30000);
       }
     }, 30000);
     res
