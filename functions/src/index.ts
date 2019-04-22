@@ -65,9 +65,12 @@ exports.evaluate_question = functions.pubsub
     channelRef.update({
       metadata: {
         ...round.data().metadata,
-        remainingPlayerCount: correctGuesses.length, 
-        playerCount: round.data().round === 1 ? guesses.docs.length : round.data().metadata.playerCount,
-        activePlayerCount: round.data().round === 1 ? guesses.docs.length : correctGuesses.length
+        playerCount:
+          round.data().round === 1
+            ? guesses.docs.length
+            : round.data().metadata.playerCount,
+        remainingPlayerCount:
+          round.data().round === 1 ? guesses.docs.length : correctGuesses.length
       }
     });
 
@@ -82,9 +85,9 @@ exports.evaluate_question = functions.pubsub
     // There is no winner- nockout model?
     else if (correctGuesses.length == 1) {
     }
+
     // increment all correct guesser players score by 1
     correctGuesses.forEach(guess => {
-      console.log(guess.toString());
       channelRef
         .collection("players")
         .doc(guess.id)
@@ -153,6 +156,16 @@ exports.post_question = functions.pubsub
       }
     });
     return true;
+  });
+
+exports.post_question = functions.pubsub
+  .topic("post-question")
+  .onPublish(async message => {
+    var channel = "000000";
+    if (message.data) {
+      channel = Buffer.from(message.data, "base64").toString();
+    }
+    const channelRef = db.collection("channels").doc(channel);
   });
 
 exports.minutely_job = functions.pubsub
