@@ -35,8 +35,8 @@ exports.new_round = functions.pubsub
       metadata: {
         round: 0,
         playerCount: 0,
-        activePlayerCount: 0
-      }
+      },
+      players: data.data().players.map((player) => {player.score = 0; player.isWinning = true; })
     });
     (await channelRef.collection("players").get()).forEach(player => {
       player.ref.set({ score: 0 });
@@ -66,11 +66,13 @@ exports.evaluate_question = functions.pubsub
       metadata: {
         ...round.data().metadata,
         playerCount:
-          round.data().round === 1
+          round.data().metadata.round === 1
             ? guesses.docs.length
             : round.data().metadata.playerCount,
         remainingPlayerCount:
-          round.data().round === 1 ? guesses.docs.length : correctGuesses.length
+          round.data().metadata.round === 1
+            ? guesses.docs.length
+            : correctGuesses.length
       }
     });
 
@@ -93,6 +95,10 @@ exports.evaluate_question = functions.pubsub
         .doc(guess.id)
         .update({ score: round.data().metadata.round });
     });
+    
+    const playerScored = correctGuesses.map(guess => {
+      return { [guess.id]: { isWinning: true, score: round.data().metadata.round } };
+    });
 
     channelRef.update({
       result: {
@@ -103,7 +109,8 @@ exports.evaluate_question = functions.pubsub
           2: guesses.docs.filter(doc => doc.data().guess == 2).length,
           3: guesses.docs.filter(doc => doc.data().guess == 3).length
         }
-      }
+      },
+      players: [round.data().players.map((player) => { player.isWinning = false }), playerScored]
     });
 
     deleteCollection(guesses);
@@ -150,7 +157,6 @@ exports.post_question = functions.pubsub
       question: question.question,
       answers: answers,
       correctAnswerIndex: correctAnswerIndex,
-      active: true,
       result: {
         answer: -1
       }
@@ -158,8 +164,8 @@ exports.post_question = functions.pubsub
     return true;
   });
 
-exports.post_question = functions.pubsub
-  .topic("post-question")
+exports.finish_round = functions.pubsub
+  .topic("finish-round")
   .onPublish(async message => {
     var channel = "000000";
     if (message.data) {
