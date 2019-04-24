@@ -31,17 +31,19 @@ exports.new_round = functions.pubsub
 
     // DONE set the number of active player to the number of players where score != 0;
 
+    var count = 0;
+    for (var k in data.data().players) {
+      ++count;
+    }
+
     channelRef.set({
       metadata: {
         round: 0,
-        playerCount: 0,
+        playerCount: count,
+        remainingPlayerCount: count
       },
-      players: data.data().players.map((player) => {player.score = 0; player.isWinning = true; })
+      players: []
     });
-    (await channelRef.collection("players").get()).forEach(player => {
-      player.ref.set({ score: 0 });
-    });
-
     return true;
   });
 
@@ -78,10 +80,7 @@ exports.evaluate_question = functions.pubsub
 
     // TODO check if theres a winner
     if (correctGuesses.length == 1) {
-      // display current winner
-      channelRef.update({
-        winner: correctGuesses[0].id
-      });
+
     }
 
     // There is no winner- nockout model?
@@ -95,10 +94,28 @@ exports.evaluate_question = functions.pubsub
         .doc(guess.id)
         .update({ score: round.data().metadata.round });
     });
-    
-    const playerScored = correctGuesses.map(guess => {
-      return { [guess.id]: { isWinning: true, score: round.data().metadata.round } };
-    });
+
+    let players = guesses.docs
+      .map(guess => {
+        return {
+          key: guess.id,
+          isWinning: false,
+          score: round.data().metadata.round - 1
+        };
+      })
+      .concat(
+        correctGuesses.map(guess => {
+          return {
+            key: guess.id,
+            isWinning: true,
+            score: round.data().metadata.round
+          };
+        })
+      );
+    const playersReduced = players.reduce((map, obj) => {
+      map[obj.key] = { isWinning: obj.isWinning, score: obj.score };
+      return map;
+    }, {});
 
     channelRef.update({
       result: {
@@ -110,7 +127,8 @@ exports.evaluate_question = functions.pubsub
           3: guesses.docs.filter(doc => doc.data().guess == 3).length
         }
       },
-      players: [round.data().players.map((player) => { player.isWinning = false }), playerScored]
+      players: { ...round.data().players, ...playersReduced } ,
+      winner: correctGuesses.length == 1 ? correctGuesses[0].id : null
     });
 
     deleteCollection(guesses);
@@ -128,13 +146,6 @@ exports.post_question = functions.pubsub
 
     // update metadata
     const data = await channelRef.get();
-    channelRef.update({
-      metadata: {
-        ...data.data().metadata,
-        round: data.data().metadata.round + 1,
-        reports: 0
-      }
-    });
 
     // get question
     var question = await getFallbackQuestion();
@@ -154,6 +165,11 @@ exports.post_question = functions.pubsub
     //const roundRef = channelRef.collection("rounds").doc();
 
     channelRef.update({
+      metadata: {
+        ...data.data().metadata,
+        round: data.data().metadata.round + 1,
+        reports: 0
+      },
       question: question.question,
       answers: answers,
       correctAnswerIndex: correctAnswerIndex,
