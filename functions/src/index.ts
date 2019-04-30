@@ -32,10 +32,10 @@ exports.new_round = functions.pubsub
     // DONE set the number of active player to the number of players where score != 0;
 
     var count = 0;
-    for (var k in data.data().players) {
+    for (var _ in data.data().players) {
       ++count;
     }
-
+    
     channelRef.set({
       metadata: {
         round: 0,
@@ -64,6 +64,9 @@ exports.evaluate_question = functions.pubsub
       doc => doc.data().guess == round.data().correctAnswerIndex
     );
 
+    //For each correct guess, increment the score
+    
+    
     channelRef.update({
       metadata: {
         ...round.data().metadata,
@@ -71,51 +74,21 @@ exports.evaluate_question = functions.pubsub
           round.data().metadata.round === 1
             ? guesses.docs.length
             : round.data().metadata.playerCount,
-        remainingPlayerCount:
-          round.data().metadata.round === 1
-            ? guesses.docs.length
-            : correctGuesses.length
       }
     });
 
-    // TODO check if theres a winner
-    if (correctGuesses.length == 1) {
-
-    }
-
-    // There is no winner- nockout model?
-    else if (correctGuesses.length == 1) {
-    }
-
-    // increment all correct guesser players score by 1
-    correctGuesses.forEach(guess => {
-      channelRef
-        .collection("players")
-        .doc(guess.id)
-        .update({ score: round.data().metadata.round });
-    });
-
     let players = guesses.docs
-      .map(guess => {
+      .map(doc => {
+        let score = doc.data().guess === round.data().correctAnswerIndex 
         return {
-          key: guess.id,
-          isWinning: false,
-          score: round.data().metadata.round - 1
+          key: doc.id,
+          score: round.data().players[doc.id] ? round.data().players[doc.id].score + score : score
         };
       })
-      .concat(
-        correctGuesses.map(guess => {
-          return {
-            key: guess.id,
-            isWinning: true,
-            score: round.data().metadata.round
-          };
-        })
-      );
-    const playersReduced = players.reduce((map, obj) => {
-      map[obj.key] = { isWinning: obj.isWinning, score: obj.score };
+    const playersReduced = {...round.data().players, ...players.reduce((map, obj) => {
+      map[obj.key] = { score: Number(obj.score) };
       return map;
-    }, {});
+    }, {})};
 
     channelRef.update({
       result: {
@@ -127,8 +100,7 @@ exports.evaluate_question = functions.pubsub
           3: guesses.docs.filter(doc => doc.data().guess == 3).length
         }
       },
-      players: { ...round.data().players, ...playersReduced } ,
-      winner: correctGuesses.length == 1 ? correctGuesses[0].id : null
+      players: playersReduced, 
     });
 
     deleteCollection(guesses);
